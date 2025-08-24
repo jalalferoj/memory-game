@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Match Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .game-title {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .game-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .restart-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .restart-btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            aspect-ratio: 1;
+            position: relative;
+            cursor: pointer;
+            perspective: 1000px;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .card-back {
+            background: white;
+            color: #333;
+            transform: rotateY(180deg);
+            border: 3px solid #e9ecef;
+        }
+
+        .card.matched .card-back {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        .card.matched {
+            cursor: default;
+        }
+
+        .win-message {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .win-message.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .win-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+        }
+
+        .win-message.show .win-content {
+            transform: scale(1);
+        }
+
+        .win-title {
+            font-size: 2.5rem;
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+
+        .win-stats {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .play-again-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .play-again-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 480px) {
+            .game-container {
+                padding: 20px;
+            }
+            
+            .game-title {
+                font-size: 2rem;
+            }
+            
+            .game-board {
+                gap: 10px;
+            }
+            
+            .card-front, .card-back {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1 class="game-title">🧠 Memory Match</h1>
+        </div>
+        
+        <div class="game-stats">
+            <div class="stat">
+                <div class="stat-label">Moves</div>
+                <div class="stat-value" id="moves">0</div>
+            </div>
+            <button class="restart-btn" onclick="restartGame()">🔄 Restart</button>
+            <div class="stat">
+                <div class="stat-label">Matches</div>
+                <div class="stat-value" id="matches">0/8</div>
+            </div>
+        </div>
+        
+        <div class="game-board" id="gameBoard"></div>
+    </div>
+
+    <div class="win-message" id="winMessage">
+        <div class="win-content">
+            <div class="win-title">🎉 Congratulations!</div>
+            <div class="win-stats" id="winStats">You completed the game!</div>
+            <button class="play-again-btn" onclick="restartGame()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        class MemoryGame {
+            constructor() {
+                this.cards = ['🎮', '🎯', '🎨', '🎪', '🎭', '🎸', '🎺', '🎹'];
+                this.gameCards = [];
+                this.flippedCards = [];
+                this.matchedPairs = 0;
+                this.moves = 0;
+                this.isChecking = false;
+                
+                this.init();
+            }
+            
+            init() {
+                this.createGameCards();
+                this.shuffleCards();
+                this.renderBoard();
+                this.updateStats();
+            }
+            
+            createGameCards() {
+                this.gameCards = [];
+                // Create pairs of cards
+                this.cards.forEach((symbol, index) => {
+                    this.gameCards.push({ id: index * 2, symbol, matched: false });
+                    this.gameCards.push({ id: index * 2 + 1, symbol, matched: false });
+                });
+            }
+            
+            shuffleCards() {
+                for (let i = this.gameCards.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [this.gameCards[i], this.gameCards[j]] = [this.gameCards[j], this.gameCards[i]];
+                }
+            }
+            
+            renderBoard() {
+                const board = document.getElementById('gameBoard');
+                board.innerHTML = '';
+                
+                this.gameCards.forEach((card, index) => {
+                    const cardElement = document.createElement('div');
+                    cardElement.className = 'card';
+                    cardElement.dataset.index = index;
+                    cardElement.onclick = () => this.flipCard(index);
+                    
+                    cardElement.innerHTML = `
+                        <div class="card-inner">
+                            <div class="card-front">?</div>
+                            <div class="card-back">${card.symbol}</div>
+                        </div>
+                    `;
+                    
+                    board.appendChild(cardElement);
+                });
+            }
+            
+            flipCard(index) {
+                if (this.isChecking || this.flippedCards.length >= 2) return;
+                
+                const card = this.gameCards[index];
+                const cardElement = document.querySelector(`[data-index="${index}"]`);
+                
+                if (card.matched || cardElement.classList.contains('flipped')) return;
+                
+                cardElement.classList.add('flipped');
+                this.flippedCards.push({ index, card, element: cardElement });
+                
+                if (this.flippedCards.length === 2) {
+                    this.moves++;
+                    this.updateStats();
+                    this.checkMatch();
+                }
+            }
+            
+            checkMatch() {
+                this.isChecking = true;
+                const [first, second] = this.flippedCards;
+                
+                setTimeout(() => {
+                    if (first.card.symbol === second.card.symbol) {
+                        // Match found
+                        first.card.matched = true;
+                        second.card.matched = true;
+                        first.element.classList.add('matched');
+                        second.element.classList.add('matched');
+                        this.matchedPairs++;
+                        
+                        if (this.matchedPairs === this.cards.length) {
+                            setTimeout(() => this.showWinMessage(), 500);
+                        }
+                    } else {
+                        // No match - flip back
+                        first.element.classList.remove('flipped');
+                        second.element.classList.remove('flipped');
+                    }
+                    
+                    this.flippedCards = [];
+                    this.isChecking = false;
+                    this.updateStats();
+                }, 1000);
+            }
+            
+            updateStats() {
+                document.getElementById('moves').textContent = this.moves;
+                document.getElementById('matches').textContent = `${this.matchedPairs}/${this.cards.length}`;
+            }
+            
+            showWinMessage() {
+                const winMessage = document.getElementById('winMessage');
+                const winStats = document.getElementById('winStats');
+                
+                winStats.textContent = `You won in ${this.moves} moves!`;
+                winMessage.classList.add('show');
+            }
+            
+            restart() {
+                this.flippedCards = [];
+                this.matchedPairs = 0;
+                this.moves = 0;
+                this.isChecking = false;
+                
+                document.getElementById('winMessage').classList.remove('show');
+                
+                this.createGameCards();
+                this.shuffleCards();
+                this.renderBoard();
+                this.updateStats();
+            }
+        }
+        
+        // Initialize game
+        let game = new MemoryGame();
+        
+        // Global restart function
+        function restartGame() {
+            game.restart();
+        }
+        
+        // Close win message when clicking outside
+        document.getElementById('winMessage').addEventListener('click', (e) => {
+            if (e.target.id === 'winMessage') {
+                document.getElementById('winMessage').classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>
